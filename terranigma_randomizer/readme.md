@@ -82,4 +82,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Credits
 
 - Original game developed and owned by Quintet Co., Ltd. and published by Enix
-- All randomization code developed by the Terranigma Randomizer Team
+- All randomization code developed by the Terranigma Randomizer Team (PixelShake92)
