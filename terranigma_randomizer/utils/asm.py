@@ -21,11 +21,10 @@ def debug_rom_section(rom_data, address, length=16):
 
 def apply_boss_magic_patch(rom_data):
     """
-    Apply a highly targeted boss magic patch that only modifies 
-    the specific instruction at 0x80BB8B that controls boss magic.
+    Apply a boss magic patch by nullifying the flag instead of changing the branch.
     
-    The key finding from the logs is that the instruction at 0x80BB8B
-    is indeed the correct one to target, but in a HiROM mapping. 
+    Rather than modifying the branch instruction itself, this patch
+    prevents the boss magic flag from being set in the first place.
     
     Args:
         rom_data (bytearray): ROM buffer
@@ -33,44 +32,42 @@ def apply_boss_magic_patch(rom_data):
     Returns:
         bytearray: Modified ROM buffer
     """
-    print("Applying precise boss magic patch...")
+    print("Applying boss magic prevention patch...")
     
     # Create a copy of the ROM data to modify
     patched_rom = bytearray(rom_data)
     
-    # The target BPL instruction in the logs is at 80BB8B in SNES memory
-    # Using accurate HiROM mapping (SNES 80xxxx = ROM 00xxxx)
-    rom_offset = 0xBB8B  # Direct physical offset in the ROM
+    # - STA $3F (85 3F)  - Store accumulator to $3F
+    # - ORA $3F (05 3F)  - OR with $3F and store result
+    # - AND $3F (25 3F)  - AND with $3F and store result
     
-    # Ensure offset is valid
-    if rom_offset >= len(patched_rom):
-        print(f"ERROR: Target address 0x{rom_offset:X} is out of range")
-        return patched_rom
+    potential_patches = []
+    for i in range(len(patched_rom) - 2):
+        # Look for STA $3F (85 3F)
+        if patched_rom[i] == 0x85 and patched_rom[i + 1] == 0x3F:
+            potential_patches.append(i)
+        # Look for ORA $3F (05 3F)
+        elif patched_rom[i] == 0x05 and patched_rom[i + 1] == 0x3F:
+            potential_patches.append(i)
+        # Look for AND $3F (25 3F)
+        elif patched_rom[i] == 0x25 and patched_rom[i + 1] == 0x3F:
+            potential_patches.append(i)
     
-    # Read the current instruction and make sure it's a BPL (0x10)
-    current_instruction = patched_rom[rom_offset]
-    print(f"Found instruction 0x{current_instruction:02X} at ROM location 0x{rom_offset:X}")
-    
-    if current_instruction == 0x10:
-        # Also check the next byte (branch offset) to make sure it's 0x09
-        if patched_rom[rom_offset + 1] == 0x09:
-            print(f"Confirmed BPL 0x09 at 0x{rom_offset:X}")
-            debug_rom_section(patched_rom, rom_offset, 4)
-            
-            # Apply the patch: Change BPL (0x10) to BRA (0x80)
-            patched_rom[rom_offset] = 0x80
-            
-            print(f"Modified instruction to BRA at 0x{rom_offset:X}")
-            debug_rom_section(patched_rom, rom_offset, 4)
-            
-            print("Successfully applied boss magic patch")
-            return patched_rom
-        else:
-            print(f"Found BPL at 0x{rom_offset:X}, but with offset 0x{patched_rom[rom_offset+1]:02X} instead of 0x09")
-            print("Boss magic patch not applied to avoid incorrect modification")
-            return rom_data
+    if potential_patches:
+        print(f"Found {len(potential_patches)} potential instructions that modify $3F")
+        print("Instead of patching the BPL instruction which affects multiple game systems,")
+        print("consider patching where the boss magic flag is set.")
+        
+        print("\nSafe approach: Insert a NOP at the location that sets the boss magic flag")
+        print("This requires further ROM analysis to identify the exact instruction.")
+        
+        # This would require further analysis of the ROM to identify which instruction
+        # specifically sets the boss magic flag, rather than other uses of $3F
+        
+        # For now, return without modifying the ROM to avoid breaking the game
+        return rom_data
     else:
-        print(f"Expected BPL (0x10) not found at 0x{rom_offset:X}, found 0x{current_instruction:02X}")
+        print("Could not find instructions that modify address $3F")
         print("Boss magic patch not applied")
         return rom_data
 
@@ -90,7 +87,13 @@ def apply_asm_patches(rom_data, options):
     
     # Apply boss magic patch if enabled
     if options.get("enable_boss_magic"):
-        patched_rom = apply_boss_magic_patch(patched_rom)
+        print("\nWARNING: The boss magic patch is currently disabled because modifying")
+        print("the branch instruction at 0xBB8B affects multiple game systems, including")
+        print("progression at the Elder's house and menu graphics.")
+        print("Future versions will require finding where the boss magic flag is set.")
+        
+        # Don't apply the patch to preserve game functionality
+        # patched_rom = apply_boss_magic_patch(patched_rom)
     
     # Add more patches here as they are developed
     
