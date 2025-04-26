@@ -11,7 +11,7 @@ from pathlib import Path
 
 # Import modules properly
 from terranigma_randomizer.randomizers import chest, shop, integration
-from terranigma_randomizer.utils import rom, logic, spoilers
+from terranigma_randomizer.utils import rom, logic, spoilers, asm
 from terranigma_randomizer.constants import items, progression
 
 def main():
@@ -32,6 +32,7 @@ def main():
     parser.add_argument("--no-integrate-shop-logic", action="store_true", help="Don't integrate shops into progression logic")
     parser.add_argument("--enforce-unique-items", action="store_true", help="Ensure weapons and armor appear only once (default)")
     parser.add_argument("--allow-duplicates", action="store_true", help="Allow duplicate weapons and armor")
+    parser.add_argument("--enable-boss-magic", action="store_true", help="Enable magic usage in all boss fights")
 
     args = parser.parse_args()
 
@@ -54,7 +55,8 @@ def main():
         "items_per_shop": "more" if args.more_items else "fewer" if args.fewer_items else "normal",
         "include_accessories": args.include_accessories,
         "include_key_items": False,
-        "special_items": []
+        "special_items": [],
+        "enable_boss_magic": args.enable_boss_magic
     }
 
     # Print banner
@@ -121,6 +123,11 @@ def run_randomizer(input_path, output_path, options):
                 shop_result = shop.randomize_shops(randomized_rom, options)
                 randomized_rom = shop_result["rom"]
                 randomized_shops = shop_result["shops"]
+
+        # Apply the boss magic patch if requested
+        if options.get("enable_boss_magic"):
+            print("\nApplying boss magic patch...")
+            randomized_rom = asm.apply_boss_magic_patch(randomized_rom)
 
         # Write the randomized ROM
         print(f"\nWriting randomized ROM to {output_path}")

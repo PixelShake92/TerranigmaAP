@@ -34,6 +34,10 @@ class TerranigmaRandomizerGUI:
         advanced_tab = ttk.Frame(tab_control, padding=10)
         tab_control.add(advanced_tab, text="Advanced Options")
         
+        # ASM Patches tab
+        asm_tab = ttk.Frame(tab_control, padding=10)
+        tab_control.add(asm_tab, text="ASM Patches")
+        
         # Basic Tab Content
         # Configure grid for basic tab
         basic_tab.columnconfigure(1, weight=1)
@@ -97,6 +101,24 @@ class TerranigmaRandomizerGUI:
         ttk.Radiobutton(item_frame, text="Normal", variable=self.items_amount, value="normal").pack(anchor=tk.W, padx=5, pady=2)
         ttk.Radiobutton(item_frame, text="More items", variable=self.items_amount, value="more").pack(anchor=tk.W, padx=5, pady=2)
         ttk.Radiobutton(item_frame, text="Fewer items", variable=self.items_amount, value="fewer").pack(anchor=tk.W, padx=5, pady=2)
+        
+        # ASM Patches Tab Content
+        asm_tab.columnconfigure(0, weight=1)
+        
+        # Frame for gameplay patches
+        gameplay_frame = ttk.LabelFrame(asm_tab, text="Gameplay Modifications", padding=10)
+        gameplay_frame.grid(column=0, row=0, sticky="ew", padx=5, pady=10)
+        
+        # Boss magic checkbox
+        self.enable_boss_magic = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            gameplay_frame, 
+            text="Enable magic in boss fights (allows magic usage in all boss battles)", 
+            variable=self.enable_boss_magic
+        ).pack(anchor=tk.W, padx=5, pady=5)
+        
+        # Room for additional ASM patches in the future
+        # Just add more checkboxes or options here as needed
         
         # Randomize Button - placed right after the tabs
         randomize_button = ttk.Button(main_frame, text="Randomize!", command=self.randomize)
@@ -236,6 +258,10 @@ class TerranigmaRandomizerGUI:
         
         if not self.unique_items.get():
             cmd.append("--allow-duplicates")
+            
+        # Add ASM patch options
+        if self.enable_boss_magic.get():
+            cmd.append("--enable-boss-magic")
         
         self.output_text.insert(tk.END, f"Using randomizer: {randomizer_exe}\n")
         self.output_text.insert(tk.END, f"Checking if randomizer exists: {os.path.exists(randomizer_exe)}\n")
@@ -319,7 +345,8 @@ class TerranigmaRandomizerGUI:
                 "items_per_shop": self.items_amount.get(),
                 "include_accessories": self.include_accessories.get(),
                 "include_key_items": False,
-                "special_items": []
+                "special_items": [],
+                "enable_boss_magic": self.enable_boss_magic.get()
             }
             
             # Capture stdout
