@@ -21,10 +21,10 @@ def debug_rom_section(rom_data, address, length=16):
 
 def apply_boss_magic_patch(rom_data):
     """
-    Apply a boss magic patch by nullifying the flag instead of changing the branch.
+    Apply boss magic patch to enable magic during boss fights.
     
-    Rather than modifying the branch instruction itself, this patch
-    prevents the boss magic flag from being set in the first place.
+    This patch modifies specific memory addresses for each boss fight to enable magic usage.
+    The addresses provided disable the magic restriction flag for each boss.
     
     Args:
         rom_data (bytearray): ROM buffer
@@ -32,45 +32,64 @@ def apply_boss_magic_patch(rom_data):
     Returns:
         bytearray: Modified ROM buffer
     """
-    print("Applying boss magic prevention patch...")
+    print("Applying boss magic patch...")
     
     # Create a copy of the ROM data to modify
     patched_rom = bytearray(rom_data)
     
-    # - STA $3F (85 3F)  - Store accumulator to $3F
-    # - ORA $3F (05 3F)  - OR with $3F and store result
-    # - AND $3F (25 3F)  - AND with $3F and store result
+    # Boss fight magic restriction addresses
+    # Each address needs to be set to 0x00 to enable magic
+    boss_patches = [
+        # (file_offset, boss_name)
+        (0xF8341, "Parasite"),
+        (0xFADAB, "Dark Morph Yeti"),
+        (0xFB17C, "Dark Morph Mage"),
+        (0xFB488, "Dark Morph Human"),
+        (0x10D222, "Mudman Canyon"),
+        (0x19AC1D, "Megatron"),  # Corrected offset (0x99AC1C - 0x800000)
+        (0xFA37B, "Hitoderon"),
+        (0xFDB02, "Dark Gaia 1"),
+        (0xFB80B, "Dark Gaia 2")
+    ]
     
-    potential_patches = []
-    for i in range(len(patched_rom) - 2):
-        # Look for STA $3F (85 3F)
-        if patched_rom[i] == 0x85 and patched_rom[i + 1] == 0x3F:
-            potential_patches.append(i)
-        # Look for ORA $3F (05 3F)
-        elif patched_rom[i] == 0x05 and patched_rom[i + 1] == 0x3F:
-            potential_patches.append(i)
-        # Look for AND $3F (25 3F)
-        elif patched_rom[i] == 0x25 and patched_rom[i + 1] == 0x3F:
-            potential_patches.append(i)
+    # Apply patches to enable magic in boss fights
+    patches_applied = 0
+    for file_offset, boss_name in boss_patches:
+        try:
+            # Check if offset is within ROM bounds
+            if file_offset >= len(patched_rom):
+                print(f"[ERROR] {boss_name}: Offset {hex(file_offset)} is beyond ROM size")
+                continue
+            
+            # Get the current value
+            original_value = patched_rom[file_offset]
+            
+            # Check if it needs patching (should be non-zero if magic is disabled)
+            if original_value != 0x00:
+                # Apply the patch - set to 0x00 to enable magic
+                patched_rom[file_offset] = 0x00
+                print(f"[OK] {boss_name}: Patched at {hex(file_offset)} (was {hex(original_value)}, now 0x00)")
+                patches_applied += 1
+            else:
+                print(f"[--] {boss_name}: Already enabled at {hex(file_offset)} (value is 0x00)")
+                
+        except Exception as e:
+            print(f"[ERROR] {boss_name}: Error patching at {hex(file_offset)}: {e}")
     
-    if potential_patches:
-        print(f"Found {len(potential_patches)} potential instructions that modify $3F")
-        print("Instead of patching the BPL instruction which affects multiple game systems,")
-        print("consider patching where the boss magic flag is set.")
-        
-        print("\nSafe approach: Insert a NOP at the location that sets the boss magic flag")
-        print("This requires further ROM analysis to identify the exact instruction.")
-        
-        # This would require further analysis of the ROM to identify which instruction
-        # specifically sets the boss magic flag, rather than other uses of $3F
-        
-        # For now, return without modifying the ROM to avoid breaking the game
-        return rom_data
-    else:
-        print("Could not find instructions that modify address $3F")
-        print("Boss magic patch not applied")
-        return rom_data
-
+    print(f"\nBoss magic patch completed: {patches_applied} patches applied")
+    
+    # Verify the patches
+    print("\nVerifying patches:")
+    for file_offset, boss_name in boss_patches:
+        try:
+            if file_offset < len(patched_rom):
+                value = patched_rom[file_offset]
+                status = "[OK] Enabled" if value == 0x00 else "[FAIL] Still disabled"
+                print(f"{boss_name}: {status} (value: {hex(value)})")
+        except:
+            pass
+    
+    return patched_rom
 
 def apply_asm_patches(rom_data, options):
     """
@@ -87,13 +106,7 @@ def apply_asm_patches(rom_data, options):
     
     # Apply boss magic patch if enabled
     if options.get("enable_boss_magic"):
-        print("\nWARNING: The boss magic patch is currently disabled because modifying")
-        print("the branch instruction at 0xBB8B affects multiple game systems, including")
-        print("progression at the Elder's house and menu graphics.")
-        print("Future versions will require finding where the boss magic flag is set.")
-        
-        # Don't apply the patch to preserve game functionality
-        # patched_rom = apply_boss_magic_patch(patched_rom)
+        patched_rom = apply_boss_magic_patch(patched_rom)
     
     # Add more patches here as they are developed
     
