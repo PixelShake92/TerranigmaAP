@@ -162,7 +162,7 @@ PROGRESSION_AREAS = {
     # Initial areas after Grecliff
     'EKLEMATA_REGION': {
         'required': ['Giant Leaves', 'ElleCape', 'RocSpear', 'Sharp Claws', 'Snowgrass Leaf'],
-        'contains': [169, 170, 171, 173, 174, 175, 176, 177, 179]
+        'contains': [169, 170, 171, 173, 174, 176, 177, 179]
     },
     
     # Needs Red Scarf (must be placed in tier 4 or earlier)
