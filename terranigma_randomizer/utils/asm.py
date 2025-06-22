@@ -121,8 +121,6 @@ def apply_intro_skip_patch(rom_data):
             return patched_rom
         
         # Change map ID from 0x000F (Ark's room) to outside Crysta
-        # Based on your notes, we need to find the correct map ID for outside Crysta
-        # You mentioned "it should be at 71" - assuming this means the map ID
         current_map = patched_rom[INTRO_WARP_MAP_OFFSET] | (patched_rom[INTRO_WARP_MAP_OFFSET + 1] << 8)
         
         # Set new map ID for outside Crysta
