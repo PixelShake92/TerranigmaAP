@@ -12,7 +12,18 @@ class ItemTypes:
     SPECIAL = 'special'
     GEMS = 'gems'
     RING = 'rings'
+    
+PORTRAIT_CHEST_ID = 150
+PORTRAIT_ITEM_ID = 0x003B
 
+# Items that must remain in vanilla locations due to game bugs
+VANILLA_ONLY_ITEMS = {
+    'Portrait': {
+        'item_id': 0x003B,
+        'chest_id': 150,
+        'reason': 'Having Portrait in inventory prevents Storkolm entry'
+    }
+}
 # Item database with IDs and classifications
 ITEM_DATABASE = {
     # Weapons
@@ -172,6 +183,7 @@ PROGRESSION_KEY_ITEMS = [
     # Chapter 3 key items
     'Red Scarf',
     'Holy Seal',
+    'Mushroom',        # Needed to put castle to sleep in Loire
     'Protect Bell',
     'Dog Whistle',
     'Ruby',
@@ -191,7 +203,6 @@ PROGRESSION_KEY_ITEMS = [
     'Time Bomb',
     
     # Other important items
-    'Portrait',
     'Jail Key',
     'Ginseng'
 ]

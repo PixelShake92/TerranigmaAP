@@ -117,6 +117,14 @@ class TerranigmaRandomizerGUI:
             variable=self.enable_boss_magic
         ).pack(anchor=tk.W, padx=5, pady=5)
         
+        # Autoheal maintenance checkbox
+        self.maintain_autoheal = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            gameplay_frame,
+            text="Maintain autoheal after Chapter 2 (keeps Crystal Spear/Hero Pike healing active)",
+            variable=self.maintain_autoheal
+        ).pack(anchor=tk.W, padx=5, pady=5)
+        
         # Room for additional ASM patches in the future
         # Just add more checkboxes or options here as needed
         

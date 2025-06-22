@@ -162,7 +162,7 @@ PROGRESSION_AREAS = {
     # Initial areas after Grecliff
     'EKLEMATA_REGION': {
         'required': ['Giant Leaves', 'ElleCape', 'RocSpear', 'Sharp Claws', 'Snowgrass Leaf'],
-        'contains': [169, 170, 171, 173, 174, 176, 177, 179]
+        'contains': [169, 170, 171, 173, 174, 175, 176, 177, 179]
     },
     
     # Needs Red Scarf (must be placed in tier 4 or earlier)
@@ -175,9 +175,9 @@ PROGRESSION_AREAS = {
         'contains': [180, 201, 202, 203, 204]
     },
     
-    # Needs Dog Whistle (must be placed in tier 4 or earlier)
+    # Needs Portrait AND Dog Whistle (must be placed in tier 4 or earlier)
     'STORKOLM_REGION': {
-        'required': ['Giant Leaves', 'ElleCape', 'RocSpear', 'Sharp Claws', 'Snowgrass Leaf', 'Protect Bell', 'Dog Whistle'],
+        'required': ['Giant Leaves', 'ElleCape', 'RocSpear', 'Sharp Claws', 'Snowgrass Leaf', 'Protect Bell', 'Portrait', 'Dog Whistle'],
         'contains': [150, 151]
     },
     
@@ -290,10 +290,10 @@ KEY_ITEM_GATES = {
     'RocSpear': ['GRECLIFF_MIDDLE', 'GRECLIFF_BOSS'],
     'Crystal Thread': ['ELLE_CAPE_AREA', 'TREE_CAVE_ENTRANCE'],
     'Dog Whistle': ['STORKOLM_REGION'],
+    'Portrait': ['STORKOLM_REGION'],  # Also needed for Storkolm
     'Black Opal': ['SYLVAIN_CASTLE'],
     'Engagement Ring': ['GREAT_LAKES_CAVERN'],
     'Jail Key': ['CASTLE_DUNGEON'],
-    'Portrait': [], # Story item, doesn't directly gate an area
     'Protect Bell': ['NORFEST_REGION'],
     'Red Scarf': ['LOURAN_REGION'],
     'Ruby': ['SYLVAIN_CASTLE'],

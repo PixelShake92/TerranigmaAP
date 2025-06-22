@@ -4,7 +4,7 @@ Chest randomization module for Terranigma Randomizer
 
 import random
 from terranigma_randomizer.constants.chests import CHEST_MAP, KNOWN_CHESTS
-from terranigma_randomizer.constants.items import get_item_name, PROGRESSION_KEY_ITEMS
+from terranigma_randomizer.constants.items import get_item_name, PROGRESSION_KEY_ITEMS, PORTRAIT_CHEST_ID, PORTRAIT_ITEM_ID
 from terranigma_randomizer.utils.logic import create_seeded_rng, create_logical_placement, shuffle_array
 
 def read_chests_from_rom(rom_data):
@@ -92,6 +92,7 @@ def randomize_chests(rom_data, options):
         dict: Modified ROM buffer and spoiler log
     """
     print('\nRandomizing chests...')
+    print('NOTE: Portrait (chest 150) will remain in vanilla location due to Storkolm entry bug')
     
     # Read current chest data for spoiler log
     current_chests = read_chests_from_rom(rom_data)
@@ -110,18 +111,30 @@ def randomize_chests(rom_data, options):
         if not chest_contents:
             print('Failed to create logical placement, falling back to random placement')
             options['use_logic'] = False
+        else:
+            # IMPORTANT: Ensure Portrait stays in its vanilla location
+            chest_contents[PORTRAIT_CHEST_ID] = PORTRAIT_ITEM_ID
     
     if not options.get('use_logic', True):
         print('Using random chest placement...')
-        # Collect all item IDs from the current chests
-        all_item_ids = [chest['itemID'] for chest in current_chests]
+        # Collect all item IDs from the current chests EXCEPT Portrait
+        all_item_ids = []
+        for chest in current_chests:
+            if chest['id'] != PORTRAIT_CHEST_ID:  # Skip Portrait chest
+                all_item_ids.append(chest['itemID'])
         
         # Shuffle the items
         shuffle_array(all_item_ids)
         
-        # Assign items to chests
-        for i, chest in enumerate(current_chests):
-            chest_contents[chest['id']] = all_item_ids[i % len(all_item_ids)]
+        # Assign items to chests (skipping Portrait chest)
+        item_index = 0
+        for chest in current_chests:
+            if chest['id'] != PORTRAIT_CHEST_ID:  # Skip Portrait chest
+                chest_contents[chest['id']] = all_item_ids[item_index]
+                item_index += 1
+            else:
+                # Portrait stays in its chest
+                chest_contents[PORTRAIT_CHEST_ID] = PORTRAIT_ITEM_ID
     
     # Write the chest contents to ROM
     modified_rom = write_chests_to_rom(rom_data, chest_contents)
@@ -132,14 +145,20 @@ def randomize_chests(rom_data, options):
         new_item_id = chest_contents.get(chest['id'], chest['itemID'])
         new_item_name = get_item_name(new_item_id)
         
-        spoiler_log.append({
+        entry = {
             'chestID': chest['id'],
             'location': f"{chest['mapName'] if 'mapName' in chest else 'Unknown'} ({chest['posX']},{chest['posY']})",
             'originalItem': chest['itemName'],
             'originalItemId': chest['itemID'],
             'newItem': new_item_name,
             'newItemId': new_item_id
-        })
+        }
+        
+        # Add note for Portrait
+        if chest['id'] == PORTRAIT_CHEST_ID:
+            entry['note'] = 'NOT RANDOMIZED - Vanilla location due to Storkolm entry bug'
+        
+        spoiler_log.append(entry)
     
     return {
         'rom': modified_rom,

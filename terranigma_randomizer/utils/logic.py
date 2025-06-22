@@ -4,7 +4,7 @@ Functions for determining accessible areas, item placement, etc.
 """
 
 import random
-from terranigma_randomizer.constants.items import ITEM_NAME_TO_ID, PROGRESSION_KEY_ITEMS
+from terranigma_randomizer.constants.items import ITEM_NAME_TO_ID, PROGRESSION_KEY_ITEMS, PORTRAIT_CHEST_ID, PORTRAIT_ITEM_ID
 from terranigma_randomizer.constants.progression import (
     get_accessible_areas, get_accessible_chests, get_accessible_shops,
     KEY_ITEM_GATES, SHOP_ID_TO_NAME, SHOP_NAME_TO_ID, PROGRESSION_AREAS
@@ -179,6 +179,10 @@ def get_chests_for_regions(regions):
     for region in regions:
         if region in PROGRESSION_AREAS:
             chest_ids.extend(PROGRESSION_AREAS[region]['contains'])
+    
+    # Remove Portrait chest from the list
+    if PORTRAIT_CHEST_ID in chest_ids:
+        chest_ids.remove(PORTRAIT_CHEST_ID)
     
     return chest_ids
 
@@ -401,7 +405,7 @@ def place_key_item_in_valid_region(key_item, collected_items, chest_contents, sh
     # If no specific regions defined, use base logic
     if not valid_regions:
         accessible_chests = get_accessible_chests(collected_items)
-        available_chests = [chest_id for chest_id in accessible_chests if chest_id not in used_chests]
+        available_chests = [chest_id for chest_id in accessible_chests if chest_id not in used_chests and chest_id != PORTRAIT_CHEST_ID]
         
         if not available_chests:
             if verbose:
@@ -443,8 +447,8 @@ def place_key_item_in_valid_region(key_item, collected_items, chest_contents, sh
     # Get all chests in the valid regions
     valid_chests = get_chests_for_regions(chest_regions)
     
-    # Filter out already used chests
-    available_chests = [chest_id for chest_id in valid_chests if chest_id not in used_chests]
+    # Filter out already used chests and Portrait chest
+    available_chests = [chest_id for chest_id in valid_chests if chest_id not in used_chests and chest_id != PORTRAIT_CHEST_ID]
     
     if not available_chests:
         if verbose:
@@ -484,13 +488,13 @@ def place_starstones(chest_contents, shop_contents, used_chests, collected_items
     for area in ['NEOTOKYO_SEWER', 'MU_REGION', 'GREAT_LAKES_CAVERN',]:
         if area in PROGRESSION_AREAS:
             late_area_chests.extend([chest_id for chest_id in PROGRESSION_AREAS[area]['contains'] 
-                                     if chest_id not in used_chests])
+                                     if chest_id not in used_chests and chest_id != PORTRAIT_CHEST_ID])
     
     # If we don't have enough late-game chests, use any accessible chests
     if len(late_area_chests) < 3:
         accessible_chests = get_accessible_chests(collected_items)
         late_area_chests.extend([chest_id for chest_id in accessible_chests 
-                                if chest_id not in used_chests and chest_id not in late_area_chests])
+                                if chest_id not in used_chests and chest_id not in late_area_chests and chest_id != PORTRAIT_CHEST_ID])
     
     # Shuffle the chest list
     shuffle_array(late_area_chests)
@@ -545,7 +549,7 @@ def place_starstones(chest_contents, shop_contents, used_chests, collected_items
     
     # We still need more Starstones - use any remaining chests
     if starstone_locations < 5:
-        remaining_chests = [chest_id for chest_id in CHEST_MAP.keys() if chest_id not in used_chests]
+        remaining_chests = [chest_id for chest_id in CHEST_MAP.keys() if chest_id not in used_chests and chest_id != PORTRAIT_CHEST_ID]
         shuffle_array(remaining_chests)
         
         for i in range(min(5 - starstone_locations, len(remaining_chests))):
@@ -579,6 +583,7 @@ def create_logical_placement(verbose=False):
     """
     if verbose:
         print("Creating logical placement...")
+        print("NOTE: Portrait (chest 150) will remain in vanilla location")
     
     # Prepare our chest and shop placement maps
     chest_contents = {}
@@ -598,6 +603,9 @@ def create_logical_placement(verbose=False):
     
     # Place early essentials in very accessible areas
     early_chests = get_chests_for_regions(['UNDERWORLD_START', 'TREE_CAVE_ENTRANCE'])
+    # Remove Portrait chest
+    if PORTRAIT_CHEST_ID in early_chests:
+        early_chests.remove(PORTRAIT_CHEST_ID)
     shuffle_array(early_chests)
     
     for i, key_item in enumerate(early_essentials):
@@ -627,7 +635,7 @@ def create_logical_placement(verbose=False):
     
     # Add special handling for mid-game essentials
     mid_game_chests = get_chests_for_regions(['SURFACE_INITIAL', 'GRECLIFF_ENTRANCE', 'GRECLIFF_MIDDLE', 'EKLEMATA_REGION'])
-    mid_game_chests = [chest_id for chest_id in mid_game_chests if chest_id not in used_chests]
+    mid_game_chests = [chest_id for chest_id in mid_game_chests if chest_id not in used_chests and chest_id != PORTRAIT_CHEST_ID]
     shuffle_array(mid_game_chests)
     
     for i, key_item in enumerate(mid_essentials):
@@ -651,6 +659,10 @@ def create_logical_placement(verbose=False):
     
     # Fill remaining chests with regular items
     all_known_chest_ids = list(CHEST_MAP.keys())
+    # Remove Portrait chest
+    if PORTRAIT_CHEST_ID in all_known_chest_ids:
+        all_known_chest_ids.remove(PORTRAIT_CHEST_ID)
+    
     remaining_chests = [chest_id for chest_id in all_known_chest_ids if chest_id not in used_chests]
     
     # Get all non-key items for filling the rest
@@ -677,6 +689,9 @@ def create_logical_placement(verbose=False):
         item_id = regular_items[i % len(regular_items)]
         chest_contents[chest_id] = item_id
     
+    # Ensure Portrait stays in its vanilla location
+    chest_contents[PORTRAIT_CHEST_ID] = PORTRAIT_ITEM_ID
+    
     # Add Starstones5 to collected_items for validation
     collected_items.add('Starstones5')
     
@@ -684,6 +699,7 @@ def create_logical_placement(verbose=False):
     if validate_game_progress(chest_contents, shop_contents, verbose):
         if verbose:
             print("Placement validated - game is beatable!")
+            print(f"Portrait remains in chest {PORTRAIT_CHEST_ID}")
         return chest_contents
     else:
         if verbose:

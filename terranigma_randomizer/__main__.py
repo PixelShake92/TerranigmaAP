@@ -33,6 +33,8 @@ def main():
     parser.add_argument("--enforce-unique-items", action="store_true", help="Ensure weapons and armor appear only once (default)")
     parser.add_argument("--allow-duplicates", action="store_true", help="Allow duplicate weapons and armor")
     parser.add_argument("--enable-boss-magic", action="store_true", help="Enable magic usage in all boss fights")
+    parser.add_argument("--maintain-autoheal", action="store_true", help="Maintain autoheal after Chapter 2")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output for debugging")
 
     args = parser.parse_args()
 
@@ -42,7 +44,7 @@ def main():
         "randomize_chests": not args.skip_chests,
         "randomize_shops": not args.skip_shops,
         "use_logic": not args.no_logic,
-        "verbose": False,
+        "verbose": args.verbose,
         "max_attempts": 5000,
         "integrate_shop_logic": not args.no_integrate_shop_logic,
         "enforce_unique_items": not args.allow_duplicates,
@@ -128,6 +130,10 @@ def run_randomizer(input_path, output_path, options):
         if options.get("enable_boss_magic"):
             print("\nApplying boss magic patch...")
             randomized_rom = asm.apply_boss_magic_patch(randomized_rom)
+        # Apply the autoheal patch if requested
+        if options.get("maintain_autoheal"):
+            print("\nApplying autoheal maintenance patch...")
+            randomized_rom = asm.apply_autoheal_patch(randomized_rom)        
 
         # Write the randomized ROM
         print(f"\nWriting randomized ROM to {output_path}")

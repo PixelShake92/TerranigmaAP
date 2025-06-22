@@ -2,7 +2,7 @@
 Spoiler log generation functions for Terranigma Randomizer
 """
 
-from terranigma_randomizer.constants.items import PROGRESSION_KEY_ITEMS, ITEM_DATABASE, get_item_name, ITEM_NAME_TO_ID
+from terranigma_randomizer.constants.items import PROGRESSION_KEY_ITEMS, ITEM_DATABASE, get_item_name, ITEM_NAME_TO_ID, PORTRAIT_CHEST_ID, PORTRAIT_ITEM_ID
 
 def generate_chest_spoiler_text(spoiler_log):
     """
@@ -16,6 +16,9 @@ def generate_chest_spoiler_text(spoiler_log):
     """
     text = 'Terranigma Chest Randomizer - Spoiler Log\n'
     text += '=========================================\n\n'
+    
+    # Add note about Portrait exclusion
+    text += 'NOTE: Portrait remains in vanilla location (Stockholm House) due to entry bug\n\n'
     
     # Sort by map for easier reading
     spoiler_log.sort(key=lambda x: x['location'])
@@ -55,7 +58,15 @@ def generate_chest_spoiler_text(spoiler_log):
             if item_text in PROGRESSION_KEY_ITEMS:
                 item_text = f"{entry['newItem']} [KEY]"
             
+            # Special marking for Portrait
+            if entry['chestID'] == PORTRAIT_CHEST_ID:
+                item_text += " [VANILLA - NOT RANDOMIZED]"
+            
             text += f"  Chest ID {str(entry['chestID']).rjust(3)} {position}: {entry['originalItem']} → {item_text}\n"
+            
+            # Include note if present
+            if 'note' in entry:
+                text += f"    Note: {entry['note']}\n"
         
         text += '\n'
     
@@ -153,11 +164,15 @@ def generate_enhanced_spoiler_text(result, seed):
     
     text += f'Seed: {seed}\n\n'
     
+    # Add note about Portrait
+    text += 'IMPORTANT: Portrait remains in vanilla location (Stockholm House, Chest 150)\n'
+    text += 'due to a bug that prevents Storkolm entry if Portrait is in inventory.\n\n'
+    
     # First, list all key items with their locations
     text += 'Key Item Locations Summary:\n'
     text += '=========================\n\n'
     
-    # DIRECT FIX: Find all possible Starstones
+    # Find all possible Starstones
     starstone_chests = []
     starstone_shops = []
     
