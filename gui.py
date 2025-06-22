@@ -1,97 +1,139 @@
+#!/usr/bin/env python3
+"""
+GUI for Terranigma Randomizer
+"""
 import tkinter as tk
-from tkinter import filedialog, ttk
-import subprocess
+from tkinter import ttk, filedialog, messagebox, scrolledtext
 import os
 import sys
-import random
+import subprocess
+import threading
+import json
+from pathlib import Path
 
 class TerranigmaRandomizerGUI:
     def __init__(self, root):
         self.root = root
-        root.title("Terranigma Randomizer")
+        self.root.title("Terranigma Randomizer")
+        self.root.geometry("800x600")
         
-        # Set a larger default size that works well with all content
-        root.geometry("700x700")
-        root.minsize(650, 600)  # Set minimum window size
+        # Variables
+        self.input_path = tk.StringVar()
+        self.output_path = tk.StringVar()
+        self.seed = tk.StringVar()
+        self.skip_chests = tk.BooleanVar(value=False)
+        self.skip_shops = tk.BooleanVar(value=False)
+        self.no_logic = tk.BooleanVar(value=False)
+        self.scale_equipment = tk.BooleanVar(value=False)
+        self.include_accessories = tk.BooleanVar(value=False)
+        self.price_variation = tk.IntVar(value=50)
+        self.shop_logic = tk.BooleanVar(value=True)
+        self.unique_items = tk.BooleanVar(value=True)
+        self.items_amount = tk.StringVar(value="normal")
+        self.enable_boss_magic = tk.BooleanVar(value=False)
+        self.enable_intro_skip = tk.BooleanVar(value=False)
+        self.status_var = tk.StringVar(value="Ready")
         
-        # Create a main frame with padding
-        main_frame = ttk.Frame(root, padding="10")
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        # Create widgets
+        self.create_widgets()
         
-        # Configure grid weights to make the layout responsive
-        main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(3, weight=1)  # Make output area expandable
+        # Center window
+        self.center_window()
         
-        # Create tabs for better organization
-        tab_control = ttk.Notebook(main_frame)
-        tab_control.grid(row=0, column=0, sticky="nsew", pady=(0, 10))
+    def center_window(self):
+        """Center the window on the screen"""
+        self.root.update_idletasks()
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
+        
+    def create_widgets(self):
+        """Create all GUI widgets"""
+        # Main frame
+        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        # Configure grid weights
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=1)
+        
+        # File selection frame
+        file_frame = ttk.LabelFrame(main_frame, text="ROM Files", padding="10")
+        file_frame.grid(row=0, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
+        file_frame.columnconfigure(1, weight=1)
+        
+        # Input ROM
+        ttk.Label(file_frame, text="Input ROM:").grid(row=0, column=0, sticky=tk.W, padx=5)
+        ttk.Entry(file_frame, textvariable=self.input_path).grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
+        ttk.Button(file_frame, text="Browse...", command=self.browse_input).grid(row=0, column=2, padx=5)
+        
+        # Output ROM
+        ttk.Label(file_frame, text="Output ROM:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        ttk.Entry(file_frame, textvariable=self.output_path).grid(row=1, column=1, sticky=(tk.W, tk.E), padx=5, pady=5)
+        ttk.Button(file_frame, text="Browse...", command=self.browse_output).grid(row=1, column=2, padx=5, pady=5)
+        
+        # Options notebook (tabs)
+        notebook = ttk.Notebook(main_frame)
+        notebook.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=10)
         
         # Basic tab
-        basic_tab = ttk.Frame(tab_control, padding=10)
-        tab_control.add(basic_tab, text="Basic Options")
+        basic_tab = ttk.Frame(notebook, padding="10")
+        notebook.add(basic_tab, text="Basic Options")
         
         # Advanced tab
-        advanced_tab = ttk.Frame(tab_control, padding=10)
-        tab_control.add(advanced_tab, text="Advanced Options")
+        advanced_tab = ttk.Frame(notebook, padding="10")
+        notebook.add(advanced_tab, text="Advanced Options")
         
         # ASM Patches tab
-        asm_tab = ttk.Frame(tab_control, padding=10)
-        tab_control.add(asm_tab, text="ASM Patches")
+        asm_tab = ttk.Frame(notebook, padding="10")
+        notebook.add(asm_tab, text="ASM Patches")
         
         # Basic Tab Content
-        # Configure grid for basic tab
         basic_tab.columnconfigure(1, weight=1)
         
-        # Input/Output File Selection
-        ttk.Label(basic_tab, text="Input ROM:").grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
-        self.input_path = tk.StringVar()
-        ttk.Entry(basic_tab, textvariable=self.input_path, width=50).grid(column=1, row=0, sticky="ew", padx=5, pady=5)
-        ttk.Button(basic_tab, text="Browse...", command=self.browse_input).grid(column=2, row=0, padx=5, pady=5)
-        
-        ttk.Label(basic_tab, text="Output ROM:").grid(column=0, row=1, sticky=tk.W, padx=5, pady=5)
-        self.output_path = tk.StringVar()
-        ttk.Entry(basic_tab, textvariable=self.output_path, width=50).grid(column=1, row=1, sticky="ew", padx=5, pady=5)
-        ttk.Button(basic_tab, text="Browse...", command=self.browse_output).grid(column=2, row=1, padx=5, pady=5)
-        
         # Seed
-        ttk.Label(basic_tab, text="Seed (optional):").grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
-        self.seed = tk.StringVar()
-        ttk.Entry(basic_tab, textvariable=self.seed, width=20).grid(column=1, row=2, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(basic_tab, text="Seed (optional):").grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        seed_entry = ttk.Entry(basic_tab, textvariable=self.seed, width=20)
+        seed_entry.grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
         
-        # Basic checkboxes
-        self.skip_chests = tk.BooleanVar(value=False)
-        ttk.Checkbutton(basic_tab, text="Skip chest randomization", variable=self.skip_chests).grid(column=0, row=3, columnspan=3, sticky=tk.W, padx=5, pady=5)
+        # Checkboxes for basic options
+        ttk.Checkbutton(basic_tab, text="Skip chest randomization", variable=self.skip_chests).grid(
+            column=0, row=1, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        ttk.Checkbutton(basic_tab, text="Skip shop randomization", variable=self.skip_shops).grid(
+            column=0, row=2, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        ttk.Checkbutton(basic_tab, text="Use purely random placement (no logic)", variable=self.no_logic).grid(
+            column=0, row=3, columnspan=2, sticky=tk.W, padx=5, pady=5)
         
-        self.skip_shops = tk.BooleanVar(value=False)
-        ttk.Checkbutton(basic_tab, text="Skip shop randomization", variable=self.skip_shops).grid(column=0, row=4, columnspan=3, sticky=tk.W, padx=5, pady=5)
-        
-        self.scale_equipment = tk.BooleanVar(value=False)
-        ttk.Checkbutton(basic_tab, text="Scale shop equipment to game progression", variable=self.scale_equipment).grid(column=0, row=5, columnspan=3, sticky=tk.W, padx=5, pady=5)
-        
-        self.include_accessories = tk.BooleanVar(value=False)
-        ttk.Checkbutton(basic_tab, text="Include accessories in shops", variable=self.include_accessories).grid(column=0, row=6, columnspan=3, sticky=tk.W, padx=5, pady=5)
-        
-        # Price variation slider
-        ttk.Label(basic_tab, text="Price variation:").grid(column=0, row=7, sticky=tk.W, padx=5, pady=5)
-        self.price_variation = tk.IntVar(value=50)
-        price_scale = ttk.Scale(basic_tab, from_=0, to=100, variable=self.price_variation, orient=tk.HORIZONTAL)
-        price_scale.grid(column=1, row=7, sticky="ew", padx=5, pady=5)
-        ttk.Label(basic_tab, textvariable=tk.StringVar(value="50%")).grid(column=2, row=7, padx=5, pady=5)
-        price_scale.config(command=lambda val: self.update_price_label(val))
+        # Warning for no logic
+        warning_label = ttk.Label(basic_tab, text="⚠ No logic mode may create unbeatable seeds!", 
+                                 foreground="red", font=("", 9, "italic"))
+        warning_label.grid(column=0, row=4, columnspan=2, sticky=tk.W, padx=25, pady=0)
         
         # Advanced Tab Content
-        # Configure grid for advanced tab
         advanced_tab.columnconfigure(1, weight=1)
         
-        # Detailed logic options
-        self.no_logic = tk.BooleanVar(value=False)
-        ttk.Checkbutton(advanced_tab, text="Use purely random chest placement (not recommended)", variable=self.no_logic).grid(column=0, row=0, columnspan=3, sticky=tk.W, padx=5, pady=5)
+        # Shop options
+        ttk.Checkbutton(advanced_tab, text="Scale equipment to progression", variable=self.scale_equipment).grid(
+            column=0, row=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        ttk.Checkbutton(advanced_tab, text="Include accessories in shops", variable=self.include_accessories).grid(
+            column=0, row=1, columnspan=2, sticky=tk.W, padx=5, pady=5)
         
-        self.shop_logic = tk.BooleanVar(value=True)
-        ttk.Checkbutton(advanced_tab, text="Integrate shops into progression logic", variable=self.shop_logic).grid(column=0, row=1, columnspan=3, sticky=tk.W, padx=5, pady=5)
+        # Price variation
+        ttk.Label(advanced_tab, text="Price variation %:").grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
+        price_scale = ttk.Scale(advanced_tab, from_=0, to=100, variable=self.price_variation, orient=tk.HORIZONTAL)
+        price_scale.grid(column=1, row=2, sticky=(tk.W, tk.E), padx=5, pady=5)
+        price_label = ttk.Label(advanced_tab, textvariable=self.price_variation)
+        price_label.grid(column=2, row=2, padx=5, pady=5)
         
-        self.unique_items = tk.BooleanVar(value=True)
-        ttk.Checkbutton(advanced_tab, text="Ensure weapons and armor appear only once", variable=self.unique_items).grid(column=0, row=2, columnspan=3, sticky=tk.W, padx=5, pady=5)
+        # Logic options
+        logic_frame = ttk.LabelFrame(advanced_tab, text="Logic Options", padding=10)
+        logic_frame.grid(column=0, row=5, columnspan=3, sticky="ew", padx=5, pady=10)
+        
+        ttk.Checkbutton(logic_frame, text="Integrate shops into progression logic", variable=self.shop_logic).pack(anchor=tk.W, padx=5, pady=2)
+        ttk.Checkbutton(logic_frame, text="Enforce unique weapons/armor", variable=self.unique_items).pack(anchor=tk.W, padx=5, pady=2)
         
         # Shop item quantity - using a more compact radio button group
         item_frame = ttk.LabelFrame(advanced_tab, text="Shop Item Quantity", padding=10)
@@ -117,104 +159,107 @@ class TerranigmaRandomizerGUI:
             variable=self.enable_boss_magic
         ).pack(anchor=tk.W, padx=5, pady=5)
         
-        # Autoheal maintenance checkbox
-        self.maintain_autoheal = tk.BooleanVar(value=False)
+        # Intro skip checkbox
+        self.enable_intro_skip = tk.BooleanVar(value=False)
         ttk.Checkbutton(
-            gameplay_frame,
-            text="Maintain autoheal after Chapter 2 (keeps Crystal Spear/Hero Pike healing active)",
-            variable=self.maintain_autoheal
+            gameplay_frame, 
+            text="Skip intro sequence (start game outside Crysta village)", 
+            variable=self.enable_intro_skip
         ).pack(anchor=tk.W, padx=5, pady=5)
         
         # Room for additional ASM patches in the future
         # Just add more checkboxes or options here as needed
         
         # Randomize Button - placed right after the tabs
-        randomize_button = ttk.Button(main_frame, text="Randomize!", command=self.randomize)
-        randomize_button.grid(row=1, column=0, pady=10, sticky="ew")
+        randomize_button = ttk.Button(main_frame, text="Randomize!", command=self.randomize_thread, style='Accent.TButton')
+        randomize_button.grid(row=2, column=0, columnspan=3, pady=10)
         
         # Status bar
-        self.status_var = tk.StringVar(value="Ready")
-        status_bar = ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
-        status_bar.grid(row=2, column=0, sticky="ew", pady=(0, 5))
+        status_frame = ttk.Frame(main_frame)
+        status_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
+        status_frame.columnconfigure(0, weight=1)
         
-        # Output area
-        output_frame = ttk.LabelFrame(main_frame, text="Output", padding=10)
-        output_frame.grid(row=3, column=0, sticky="nsew")
+        ttk.Label(status_frame, text="Status:").grid(row=0, column=0, sticky=tk.W)
+        ttk.Label(status_frame, textvariable=self.status_var).grid(row=0, column=1, sticky=tk.W, padx=5)
+        
+        # Output text area
+        output_frame = ttk.LabelFrame(main_frame, text="Output", padding="5")
+        output_frame.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
         output_frame.columnconfigure(0, weight=1)
         output_frame.rowconfigure(0, weight=1)
+        main_frame.rowconfigure(4, weight=1)
         
-        # Create a frame for the text widget and scrollbar
-        text_frame = ttk.Frame(output_frame)
-        text_frame.grid(row=0, column=0, sticky="nsew")
-        text_frame.columnconfigure(0, weight=1)
-        text_frame.rowconfigure(0, weight=1)
+        self.output_text = scrolledtext.ScrolledText(output_frame, height=10, wrap=tk.WORD)
+        self.output_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
-        self.output_text = tk.Text(text_frame, height=15, width=80, wrap=tk.WORD)
-        self.output_text.grid(row=0, column=0, sticky="nsew")
-        
-        # Add scrollbars
-        y_scrollbar = ttk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.output_text.yview)
-        y_scrollbar.grid(row=0, column=1, sticky="ns")
-        self.output_text.config(yscrollcommand=y_scrollbar.set)
-        
-        x_scrollbar = ttk.Scrollbar(text_frame, orient=tk.HORIZONTAL, command=self.output_text.xview)
-        x_scrollbar.grid(row=1, column=0, sticky="ew")
-        self.output_text.config(xscrollcommand=x_scrollbar.set)
-        
-    def update_price_label(self, val):
-        """Update the price variation label when the slider is moved"""
-        try:
-            percentage = int(float(val))
-            self.root.nametowidget('.!frame.!notebook.!frame.!label4').config(text=f"{percentage}%")
-        except (ValueError, KeyError):
-            pass
-    
     def browse_input(self):
+        """Browse for input ROM file"""
         filename = filedialog.askopenfilename(
-            title="Select Input ROM",
-            filetypes=(("SNES ROMs", "*.sfc *.smc"), ("All files", "*.*"))
+            title="Select Terranigma ROM",
+            filetypes=[("SNES ROM files", "*.sfc *.smc"), ("All files", "*.*")]
         )
         if filename:
             self.input_path.set(filename)
+            # Auto-generate output path
+            path = Path(filename)
+            output_name = f"{path.stem}_randomized{path.suffix}"
+            self.output_path.set(str(path.parent / output_name))
             
-            # Auto-generate output path if empty
-            if not self.output_path.get():
-                # Add "_randomized" before file extension
-                base, ext = os.path.splitext(filename)
-                self.output_path.set(f"{base}_randomized{ext}")
-    
     def browse_output(self):
+        """Browse for output ROM file"""
         filename = filedialog.asksaveasfilename(
-            title="Select Output ROM",
-            filetypes=(("SNES ROMs", "*.sfc *.smc"), ("All files", "*.*"))
+            title="Save Randomized ROM As",
+            defaultextension=".sfc",
+            filetypes=[("SNES ROM files", "*.sfc *.smc"), ("All files", "*.*")]
         )
         if filename:
             self.output_path.set(filename)
-    
+            
+    def randomize_thread(self):
+        """Run randomizer in a separate thread"""
+        thread = threading.Thread(target=self.run_randomizer)
+        thread.daemon = True
+        thread.start()
+        
     def get_executable_path(self):
-        """Get the path to the randomizer executable"""
-        # Get the directory where the GUI executable is located
-        base_dir = os.path.dirname(os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__))
-        
-        # Look for the CLI randomizer executable in the same directory
-        randomizer_exe = os.path.join(base_dir, 'terranigma-randomizer.exe')
-        
-        if os.path.exists(randomizer_exe):
-            return randomizer_exe
+        """Get the path to the CLI randomizer executable"""
+        if getattr(sys, 'frozen', False):
+            # Running as compiled executable
+            base_path = sys._MEIPASS
         else:
-            # If not found, return a path that includes the directory
-            return os.path.join(base_dir, 'terranigma-randomizer.exe')
-    
-    def randomize(self):
-        # Clear output area
+            # Running as script
+            base_path = os.path.dirname(os.path.abspath(__file__))
+            
+        # Look for the CLI executable
+        if sys.platform == "win32":
+            exe_name = "terranigma-randomizer.exe"
+        else:
+            exe_name = "terranigma-randomizer"
+            
+        # Check in the same directory first
+        exe_path = os.path.join(os.path.dirname(base_path), exe_name)
+        if os.path.exists(exe_path):
+            return exe_path
+            
+        # Check in Scripts directory (for pip installs)
+        scripts_path = os.path.join(sys.prefix, "Scripts" if sys.platform == "win32" else "bin", exe_name)
+        if os.path.exists(scripts_path):
+            return scripts_path
+            
+        # Fallback to just the executable name and hope it's in PATH
+        return exe_name
+        
+    def run_randomizer(self):
+        """Run the randomizer with the current settings"""
+        # Clear output
         self.output_text.delete(1.0, tk.END)
         
-        # Check if input and output paths are provided
+        # Validate inputs
         if not self.input_path.get():
             self.output_text.insert(tk.END, "Error: Input ROM path not specified.\n")
             self.status_var.set("Error: Input ROM not specified")
             return
-        
+            
         if not self.output_path.get():
             self.output_text.insert(tk.END, "Error: Output ROM path not specified.\n")
             self.status_var.set("Error: Output ROM not specified")
@@ -271,6 +316,9 @@ class TerranigmaRandomizerGUI:
         if self.enable_boss_magic.get():
             cmd.append("--enable-boss-magic")
         
+        if self.enable_intro_skip.get():
+            cmd.append("--enable-intro-skip")
+        
         self.output_text.insert(tk.END, f"Using randomizer: {randomizer_exe}\n")
         self.output_text.insert(tk.END, f"Checking if randomizer exists: {os.path.exists(randomizer_exe)}\n")
         self.output_text.insert(tk.END, f"Running command: {' '.join(cmd)}\n\n")
@@ -279,119 +327,89 @@ class TerranigmaRandomizerGUI:
         try:
             # Use direct import if the executable doesn't exist
             if not os.path.exists(randomizer_exe):
-                self.output_text.insert(tk.END, "CLI randomizer not found! Using direct import method...\n")
-                self.randomize_direct_import()
-                return
+                self.output_text.insert(tk.END, "CLI randomizer not found, using direct import...\n")
+                # Import and run directly
+                from terranigma_randomizer.__main__ import run_randomizer
                 
-            # Use subprocess.Popen to capture output in real-time
-            process = subprocess.Popen(
-                cmd, 
-                stdout=subprocess.PIPE, 
-                stderr=subprocess.STDOUT, 
-                text=True,
-                creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0  # Prevents console window on Windows
-            )
-            
-            # Show output as it comes
-            for line in process.stdout:
-                self.output_text.insert(tk.END, line)
-                self.output_text.see(tk.END)
-                self.root.update()
-            
-            # Wait for process to complete
-            process.wait()
-            
-            if process.returncode == 0:
-                self.output_text.insert(tk.END, "\nRandomization completed successfully!\n")
-                self.status_var.set("Randomization successful")
-                # Verify the output file exists
-                if os.path.exists(self.output_path.get()):
-                    self.output_text.insert(tk.END, f"Output ROM created at: {self.output_path.get()}\n")
+                # Parse seed
+                seed = None
+                if self.seed.get():
+                    try:
+                        seed = int(self.seed.get())
+                    except ValueError:
+                        self.output_text.insert(tk.END, f"Warning: Invalid seed '{self.seed.get()}', using random seed\n")
+                
+                # Build options dict
+                options = {
+                    "seed": seed if seed is not None else None,
+                    "randomize_chests": not self.skip_chests.get(),
+                    "randomize_shops": not self.skip_shops.get(),
+                    "use_logic": not self.no_logic.get(),
+                    "verbose": False,
+                    "max_attempts": 5000,
+                    "integrate_shop_logic": self.shop_logic.get(),
+                    "enforce_unique_items": self.unique_items.get(),
+                    "randomize_items": True,
+                    "keep_consumables_in_shops": True,
+                    "keep_item_types": True,
+                    "scale_equipment": self.scale_equipment.get(),
+                    "randomize_prices": True,
+                    "price_variation": self.price_variation.get(),
+                    "items_per_shop": self.items_amount.get(),
+                    "include_accessories": self.include_accessories.get(),
+                    "include_key_items": False,
+                    "special_items": [],
+                    "enable_boss_magic": self.enable_boss_magic.get(),
+                    "enable_intro_skip": self.enable_intro_skip.get()
+                }
+                
+                # Run randomizer
+                result = run_randomizer(self.input_path.get(), self.output_path.get(), options)
+                
+                if result["success"]:
+                    self.output_text.insert(tk.END, f"\n{result['message']}\n")
+                    self.status_var.set("Randomization complete!")
+                    messagebox.showinfo("Success", result["message"])
                 else:
-                    self.output_text.insert(tk.END, f"Warning: Output ROM was not found at: {self.output_path.get()}\n")
+                    self.output_text.insert(tk.END, f"\n{result['error']}\n")
+                    self.status_var.set("Randomization failed!")
+                    messagebox.showerror("Error", result["error"])
+                    
             else:
-                self.output_text.insert(tk.END, f"\nRandomization failed with code {process.returncode}\n")
-                self.status_var.set("Randomization failed")
-        
-        except Exception as e:
-            self.output_text.insert(tk.END, f"Error: {str(e)}\n")
-            import traceback
-            self.output_text.insert(tk.END, traceback.format_exc())
-            self.status_var.set("Error occurred")
-    
-    def randomize_direct_import(self):
-        """Use direct import method for randomization"""
-        try:
-            # Update status
-            self.status_var.set("Randomizing (direct import)...")
-            
-            # Add parent directory to sys.path for imports
-            import sys
-            import os
-            parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            sys.path.append(parent_dir)
-            
-            # Import the randomizer function
-            from terranigma_randomizer.__main__ import run_randomizer
-            
-            # Build options dictionary
-            options = {
-                "seed": int(self.seed.get()) if self.seed.get() else random.randint(0, 999999),
-                "randomize_chests": not self.skip_chests.get(),
-                "randomize_shops": not self.skip_shops.get(),
-                "use_logic": not self.no_logic.get(),
-                "verbose": True,
-                "max_attempts": 100,
-                "integrate_shop_logic": self.shop_logic.get(),
-                "enforce_unique_items": self.unique_items.get(),
-                "randomize_items": True,
-                "keep_consumables_in_shops": True,
-                "keep_item_types": True,
-                "scale_equipment": self.scale_equipment.get(),
-                "randomize_prices": True,
-                "price_variation": self.price_variation.get(),
-                "items_per_shop": self.items_amount.get(),
-                "include_accessories": self.include_accessories.get(),
-                "include_key_items": False,
-                "special_items": [],
-                "enable_boss_magic": self.enable_boss_magic.get()
-            }
-            
-            # Capture stdout
-            from io import StringIO
-            import sys
-            original_stdout = sys.stdout
-            captured_output = StringIO()
-            sys.stdout = captured_output
-            
-            # Run randomizer
-            result = run_randomizer(self.input_path.get(), self.output_path.get(), options)
-            
-            # Restore stdout
-            sys.stdout = original_stdout
-            
-            # Display output and result
-            self.output_text.insert(tk.END, captured_output.getvalue())
-            
-            if result["success"]:
-                self.output_text.insert(tk.END, "\n" + result["message"] + "\n")
-                self.status_var.set("Randomization successful")
-                # Verify the output file exists
-                if os.path.exists(self.output_path.get()):
-                    self.output_text.insert(tk.END, f"Output ROM created at: {self.output_path.get()}\n")
+                # Run as subprocess
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                    universal_newlines=True
+                )
+                
+                # Read output line by line
+                for line in process.stdout:
+                    self.output_text.insert(tk.END, line)
+                    self.output_text.see(tk.END)
+                    self.output_text.update()
+                
+                # Wait for completion
+                return_code = process.wait()
+                
+                if return_code == 0:
+                    self.status_var.set("Randomization complete!")
+                    messagebox.showinfo("Success", "Randomization completed successfully!")
                 else:
-                    self.output_text.insert(tk.END, f"Warning: Output ROM was not found at: {self.output_path.get()}\n")
-            else:
-                self.output_text.insert(tk.END, "\nError: " + result["error"] + "\n")
-                self.status_var.set("Randomization failed")
-        
+                    self.status_var.set("Randomization failed!")
+                    messagebox.showerror("Error", f"Randomization failed with code {return_code}")
+                    
         except Exception as e:
-            self.output_text.insert(tk.END, f"Error in direct import method: {str(e)}\n")
-            import traceback
-            self.output_text.insert(tk.END, traceback.format_exc())
-            self.status_var.set("Error occurred")
+            error_msg = f"Error running randomizer: {str(e)}"
+            self.output_text.insert(tk.END, f"\n{error_msg}\n")
+            self.status_var.set("Error!")
+            messagebox.showerror("Error", error_msg)
 
 def main():
+    """Main entry point for the GUI"""
     root = tk.Tk()
     app = TerranigmaRandomizerGUI(root)
     root.mainloop()

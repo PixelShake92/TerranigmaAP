@@ -33,8 +33,7 @@ def main():
     parser.add_argument("--enforce-unique-items", action="store_true", help="Ensure weapons and armor appear only once (default)")
     parser.add_argument("--allow-duplicates", action="store_true", help="Allow duplicate weapons and armor")
     parser.add_argument("--enable-boss-magic", action="store_true", help="Enable magic usage in all boss fights")
-    parser.add_argument("--maintain-autoheal", action="store_true", help="Maintain autoheal after Chapter 2")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose output for debugging")
+    parser.add_argument("--enable-intro-skip", action="store_true", help="Skip intro sequence and start outside Crysta")
 
     args = parser.parse_args()
 
@@ -44,7 +43,7 @@ def main():
         "randomize_chests": not args.skip_chests,
         "randomize_shops": not args.skip_shops,
         "use_logic": not args.no_logic,
-        "verbose": args.verbose,
+        "verbose": False,
         "max_attempts": 5000,
         "integrate_shop_logic": not args.no_integrate_shop_logic,
         "enforce_unique_items": not args.allow_duplicates,
@@ -58,7 +57,8 @@ def main():
         "include_accessories": args.include_accessories,
         "include_key_items": False,
         "special_items": [],
-        "enable_boss_magic": args.enable_boss_magic
+        "enable_boss_magic": args.enable_boss_magic,
+        "enable_intro_skip": args.enable_intro_skip
     }
 
     # Print banner
@@ -113,6 +113,8 @@ def run_randomizer(input_path, output_path, options):
             # Original separate randomization
             chest_spoiler_log = []
             randomized_shops = []
+            key_items_in_shops = []
+            unique_items_in_shops = []
             
             if options["randomize_chests"]:
                 print("\nRandomizing chests...")
@@ -126,63 +128,56 @@ def run_randomizer(input_path, output_path, options):
                 randomized_rom = shop_result["rom"]
                 randomized_shops = shop_result["shops"]
 
-        # Apply the boss magic patch if requested
-        if options.get("enable_boss_magic"):
-            print("\nApplying boss magic patch...")
-            randomized_rom = asm.apply_boss_magic_patch(randomized_rom)
-        # Apply the autoheal patch if requested
-        if options.get("maintain_autoheal"):
-            print("\nApplying autoheal maintenance patch...")
-            randomized_rom = asm.apply_autoheal_patch(randomized_rom)        
+        # Apply ASM patches if any are requested
+        if options.get("enable_boss_magic") or options.get("enable_intro_skip"):
+            print("\nApplying ASM patches...")
+            randomized_rom = asm.apply_asm_patches(randomized_rom, options)
 
         # Write the randomized ROM
-        print(f"\nWriting randomized ROM to {output_path}")
+        print(f"\nWriting randomized ROM to: {output_path}")
         rom.write_rom(output_path, randomized_rom)
-        print(f"Successfully wrote randomized ROM: {output_path}")
 
-        # Generate spoiler logs
+        # Generate spoiler log
+        spoiler_path = str(Path(output_path).with_suffix('.txt'))
+        print(f"Generating spoiler log: {spoiler_path}")
+        
+        # Generate appropriate spoiler log based on options
         if options["randomize_chests"] and options["randomize_shops"] and options["integrate_shop_logic"]:
-            # Create combined spoiler log for integrated logic
-            integrated_spoiler_log_path = f"{output_path}.spoiler.txt"
-            print(f"Creating integrated spoiler log: {integrated_spoiler_log_path}")
-            spoiler_text = spoilers.generate_enhanced_spoiler_text({
+            # Use enhanced spoiler for integrated logic
+            spoiler_content = spoilers.generate_enhanced_spoiler_text({
                 "chest_spoiler_log": chest_spoiler_log,
                 "shop_spoiler_log": randomized_shops,
                 "key_items_in_shops": key_items_in_shops,
                 "unique_items_in_shops": unique_items_in_shops
-            }, options["seed"])
-            
-            with open(integrated_spoiler_log_path, "w", encoding="utf-8") as f:
-                f.write(spoiler_text)
+            }, options['seed'])
+        elif options["randomize_chests"] and not options["randomize_shops"]:
+            # Chest-only spoiler
+            spoiler_content = spoilers.generate_chest_spoiler_text(chest_spoiler_log)
+        elif options["randomize_shops"] and not options["randomize_chests"]:
+            # Shop-only spoiler
+            spoiler_content = spoilers.generate_shop_spoiler_text(randomized_shops, options['seed'])
         else:
-            # Create separate spoiler logs for chest and shop
+            # Combined but not integrated
+            spoiler_content = ""
             if options["randomize_chests"]:
-                chest_spoiler_log_path = f"{output_path}.chests-spoiler.txt"
-                print(f"Creating chest spoiler log: {chest_spoiler_log_path}")
-                chest_spoiler_text = spoilers.generate_chest_spoiler_text(chest_spoiler_log)
-                
-                with open(chest_spoiler_log_path, "w", encoding="utf-8") as f:
-                    f.write(chest_spoiler_text)
-            
+                spoiler_content += spoilers.generate_chest_spoiler_text(chest_spoiler_log)
+                spoiler_content += "\n\n"
             if options["randomize_shops"]:
-                shop_spoiler_log_path = f"{output_path}.shops-spoiler.txt"
-                print(f"Creating shop spoiler log: {shop_spoiler_log_path}")
-                shop_spoiler_text = spoilers.generate_shop_spoiler_text(randomized_shops, options["seed"])
-                
-                with open(shop_spoiler_log_path, "w", encoding="utf-8") as f:
-                    f.write(shop_spoiler_text)
+                spoiler_content += spoilers.generate_shop_spoiler_text(randomized_shops, options['seed'])
+        
+        with open(spoiler_path, 'w') as f:
+            f.write(spoiler_content)
 
         return {
             "success": True,
-            "message": "Randomization completed successfully!"
+            "message": f"Randomization complete!\nOutput: {output_path}\nSpoiler log: {spoiler_path}"
         }
+        
     except Exception as e:
         import traceback
-        print(f"Error: {e}")
-        traceback.print_exc()
         return {
             "success": False,
-            "error": str(e)
+            "error": f"{str(e)}\n{traceback.format_exc()}"
         }
 
 if __name__ == "__main__":
