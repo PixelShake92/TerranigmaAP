@@ -160,11 +160,11 @@ class TerranigmaRandomizerGUI:
         ).pack(anchor=tk.W, padx=5, pady=5)
         
         # Intro skip checkbox
-        self.enable_intro_skip = tk.BooleanVar(value=False)
+        self.skip_intro = tk.BooleanVar(value=False)
         ttk.Checkbutton(
             gameplay_frame, 
-            text="Skip intro sequence (start game outside Crysta village)", 
-            variable=self.enable_intro_skip
+            text="Skip intro (start with necessary flags and items)", 
+            variable=self.skip_intro
         ).pack(anchor=tk.W, padx=5, pady=5)
         
         # Room for additional ASM patches in the future
@@ -316,8 +316,8 @@ class TerranigmaRandomizerGUI:
         if self.enable_boss_magic.get():
             cmd.append("--enable-boss-magic")
         
-        if self.enable_intro_skip.get():
-            cmd.append("--enable-intro-skip")
+        if self.skip_intro.get():
+            cmd.append("--skip-intro")
         
         self.output_text.insert(tk.END, f"Using randomizer: {randomizer_exe}\n")
         self.output_text.insert(tk.END, f"Checking if randomizer exists: {os.path.exists(randomizer_exe)}\n")
@@ -360,7 +360,7 @@ class TerranigmaRandomizerGUI:
                     "include_key_items": False,
                     "special_items": [],
                     "enable_boss_magic": self.enable_boss_magic.get(),
-                    "enable_intro_skip": self.enable_intro_skip.get()
+                    "skip_intro": self.skip_intro.get(),
                 }
                 
                 # Run randomizer

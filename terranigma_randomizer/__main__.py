@@ -33,7 +33,7 @@ def main():
     parser.add_argument("--enforce-unique-items", action="store_true", help="Ensure weapons and armor appear only once (default)")
     parser.add_argument("--allow-duplicates", action="store_true", help="Allow duplicate weapons and armor")
     parser.add_argument("--enable-boss-magic", action="store_true", help="Enable magic usage in all boss fights")
-    parser.add_argument("--enable-intro-skip", action="store_true", help="Skip intro sequence and start outside Crysta")
+    parser.add_argument("--skip-intro", action="store_true", help="Skip the intro sequence and start with necessary flags/items")
 
     args = parser.parse_args()
 
@@ -58,7 +58,7 @@ def main():
         "include_key_items": False,
         "special_items": [],
         "enable_boss_magic": args.enable_boss_magic,
-        "enable_intro_skip": args.enable_intro_skip
+        "skip_intro": args.skip_intro
     }
 
     # Print banner
@@ -128,8 +128,8 @@ def run_randomizer(input_path, output_path, options):
                 randomized_rom = shop_result["rom"]
                 randomized_shops = shop_result["shops"]
 
-        # Apply ASM patches if any are requested
-        if options.get("enable_boss_magic") or options.get("enable_intro_skip"):
+        # Apply ASM patches
+        if options.get("enable_boss_magic") or options.get("skip_intro"):
             print("\nApplying ASM patches...")
             randomized_rom = asm.apply_asm_patches(randomized_rom, options)
 
