@@ -327,10 +327,6 @@
    'C:\\Users\\shane\\Documents\\Terranigma AP '
    'Stuff\\Rando\\TerranigmaAP\\terranigma_randomizer\\utils\\__init__.py',
    'PYMODULE'),
-  ('terranigma_randomizer.utils.asm',
-   'C:\\Users\\shane\\Documents\\Terranigma AP '
-   'Stuff\\Rando\\TerranigmaAP\\terranigma_randomizer\\utils\\asm.py',
-   'PYMODULE'),
   ('terranigma_randomizer.utils.logic',
    'C:\\Users\\shane\\Documents\\Terranigma AP '
    'Stuff\\Rando\\TerranigmaAP\\terranigma_randomizer\\utils\\logic.py',

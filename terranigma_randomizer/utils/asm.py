@@ -23,14 +23,17 @@ def apply_intro_skip_patch(rom_data):
     """
     Apply intro skip patch - direct translation of the ASAR patch:
     
-    hirom
-    
-    org $90886f
-        JML $FE0000
-        NOP #6
-    
-    org $FE0000
-        [full patch code]
+    This patch:
+    1. Hooks the intro at $90886f to jump to custom code at $FE0000
+    2. Sets all necessary starting flags for the game
+    3. Sets flag to open the gate (using LDA #$5F instead of #$1F)
+    4. Opens Tower 1 doors (sets $0710 to #$0F)
+    5. Sets starting level to 3 (EXP values at $0690-$0691)
+    6. Sets starting gems to 1000 (BCD format at $0694-$0696)
+    7. Opens access to all towers (sets $06E0 to #$AB)
+    8. Enables Crystal Thread sequence (sets $06E3 to #$34)
+    9. Sets initial inventory items (Jewel Box, CrySpear, Clothes)
+    10. Warps the player outside Crysta (coordinates: $0003, $00, $55, $0210, $0210)
     
     Args:
         rom_data (bytearray): ROM buffer
@@ -91,8 +94,8 @@ def apply_intro_skip_patch(rom_data):
         # STA $06C4
         0x8D, 0xC4, 0x06,
         
-        # LDA #$41
-        0xA9, 0x41,
+        # LDA #$43  (changed from #$41 to set post-Crystal Thread state)
+        0xA9, 0x43,
         # ORA $06C5
         0x0D, 0xC5, 0x06,
         # STA $06C5
@@ -119,12 +122,53 @@ def apply_intro_skip_patch(rom_data):
         # STA $0708
         0x8D, 0x08, 0x07,
         
-        # LDA #$1F
-        0xA9, 0x1F,
+        # LDA #$5F  (changed from #$1F to open the gate)
+        0xA9, 0x5F,
         # ORA $0712
         0x0D, 0x12, 0x07,
         # STA $0712
         0x8D, 0x12, 0x07,
+        
+        # LDA #$0F
+        0xA9, 0x0F,
+        # STA $0710 (open Tower 1 doors)
+        0x8D, 0x10, 0x07,
+        
+        # Set level 3
+        # LDA #$20
+        0xA9, 0x20,
+        # STA $0690 (Level/EXP byte 0)
+        0x8D, 0x90, 0x06,
+        # LDA #$01
+        0xA9, 0x01,
+        # STA $0691 (Level/EXP byte 1)
+        0x8D, 0x91, 0x06,
+        
+        # Set 1000 gems (BCD format)
+        # LDA #$00
+        0xA9, 0x00,
+        # STA $0694 (Gems byte 0)
+        0x8D, 0x94, 0x06,
+        # LDA #$10
+        0xA9, 0x10,
+        # STA $0695 (Gems byte 1 - 1000 in BCD)
+        0x8D, 0x95, 0x06,
+        # LDA #$00
+        0xA9, 0x00,
+        # STA $0696 (Gems byte 2)
+        0x8D, 0x96, 0x06,
+        
+        # Open access to all towers
+        # LDA #$AB
+        0xA9, 0xAB,
+        # STA $06E0 (Tower access flags)
+        0x8D, 0xE0, 0x06,
+        
+        # Enable Crystal Thread sequence
+        # LDA #$34
+        0xA9, 0x34,
+        # STA $06E3 (Crystal Thread sequence flag)
+        0x8D, 0xE3, 0x06,
         
         # REP #$20
         0xC2, 0x20,
@@ -146,16 +190,16 @@ def apply_intro_skip_patch(rom_data):
         
         # COP #$14
         0x02, 0x14,
-        # dw $000F
-        0x0F, 0x00,
-        # db $01
-        0x01,
+        # dw $0003  (Exit Crysta)
+        0x03, 0x00,
         # db $00
         0x00,
-        # dw $0128
-        0x28, 0x01,
-        # dw $0060
-        0x60, 0x00,
+        # db $55
+        0x55,
+        # dw $0210
+        0x10, 0x02,
+        # dw $0210
+        0x10, 0x02,
         
         # JML $908879
         0x5C, 0x79, 0x88, 0x90
