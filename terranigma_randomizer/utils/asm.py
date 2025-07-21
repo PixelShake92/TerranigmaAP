@@ -82,7 +82,7 @@ def apply_intro_skip_patch(rom_data):
     print(f"\nBefore patching at code location ${code_offset:06X}:")
     debug_rom_section(patched_rom, code_offset, 32)
     
-    # The full patch code exactly as in your ASM
+    # The full patch code exactly as in my current ASM
     code_bytes = [
         # SEP #$20
         0xE2, 0x20,
