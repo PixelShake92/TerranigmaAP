@@ -131,6 +131,7 @@ desktop.ini
 docs/_build/
 docs/.doctrees/
 *.pdf
+*.toc
 
 # Testing
 htmlcov/
