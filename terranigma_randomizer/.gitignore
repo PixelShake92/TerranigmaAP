@@ -1,0 +1,182 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+.Python
+develop-eggs/
+.installed.cfg
+*.egg-info/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv/
+.env
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.history/
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+*.iml
+
+# PyInstaller
+*.manifest
+*.spec
+build/
+dist/
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.tmp
+*~
+
+# ROM files (if you don't want to track them)
+*.sfc
+*.smc
+*.rom
+*.nes
+*.gb
+*.gba
+*.gbc
+*.nds
+*.z64
+*.n64
+*.v64
+
+# Save files and states
+*.sav
+*.srm
+*.state
+*.st0
+*.st1
+*.st2
+*.st3
+*.st4
+*.st5
+*.st6
+*.st7
+*.st8
+*.st9
+
+# Archives
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.bz2
+*.xz
+
+# Documentation build outputs
+docs/_build/
+docs/.doctrees/
+*.pdf
+
+# Testing
+htmlcov/
+.tox/
+.nox/
+.cache/
+nosetests.xml
+test-results/
+test-reports/
+
+# Local configuration
+config.local.ini
+settings.local.json
+.env.local
+.env.*.local
+
+# Temporary files
+temp/
+tmp/
+cache/
+
+# Output files from your randomizer (customize as needed)
+output/
+randomized/
+*_randomized.*
+
+# Debug files
+debug/
+*.dump
+*.stackdump
+core
+
+# Package manager files
+node_modules/
+package-lock.json
+yarn.lock
+Pipfile.lock
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Security and secrets
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+credentials/
